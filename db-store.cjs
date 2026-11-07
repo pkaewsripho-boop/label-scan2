@@ -1,6 +1,7 @@
 'use strict';
 // เก็บไฟล์ข้อมูลใน PostgreSQL (เช่น Neon) เมื่อกำหนด DATABASE_URL — ใช้กับเว็บโฮสต์ที่ดิสก์ไม่ถาวร (Render Free)
-// หลักการ: ฐานข้อมูลคือต้นฉบับ ไฟล์ในโฟลเดอร์ data เป็นแค่สำเนาชั่วคราว
+// ข้อมูลสแกนเก็บรายแถวในตาราง label_scans (ดู scan-store.cjs) • ไฟล์เล็ก (Master Data, ตั้งค่าเครื่องพิมพ์) เก็บในตาราง label_scan_files
+// หลักการของไฟล์เล็ก: ฐานข้อมูลคือต้นฉบับ ไฟล์ในโฟลเดอร์ data เป็นแค่สำเนาชั่วคราว
 //  - ตอนเริ่ม: ดึงทุกไฟล์จากฐานข้อมูลมาวางในโฟลเดอร์ data
 //  - ตอนบันทึก: โค้ดเดิมเขียน .tmp แล้ว rename → ก่อน rename จะบันทึกลงฐานข้อมูลก่อน ถ้าฐานข้อมูลล้มเหลว การบันทึกล้มเหลวทั้งหมด (ไม่มีการตอบว่าสำเร็จโดยข้อมูลไม่ถึงฐานข้อมูล)
 // Server ในออฟฟิศไม่ได้ตั้ง DATABASE_URL จึงยังเก็บเป็นไฟล์ตามเดิมและไม่ต้องติดตั้ง pg
@@ -12,10 +13,10 @@ module.exports=async function useDatabase({dir}){const url=(process.env.DATABASE
   const query=async(sql,args)=>{let last;for(let i=0;i<3;i++){try{return await pool.query(sql,args)}catch(e){last=e;if(!/ECONNRESET|ETIMEDOUT|terminat|Connection|timeout|57P01/i.test(String(e.code)+e.message))break;await new Promise(r=>setTimeout(r,1500*(i+1)))}}throw last};
   await query('CREATE TABLE IF NOT EXISTS label_scan_files (name text PRIMARY KEY, data bytea NOT NULL, size integer NOT NULL, updated_at timestamptz NOT NULL DEFAULT now())');
   const {rows}=await query('SELECT name,data FROM label_scan_files');
-  for(const r of rows){if(!/^[\w.-]+\.json$/.test(r.name))continue;await fs.writeFile(path.join(dir,r.name),zlib.gunzipSync(r.data))}
-  console.log(`Database: ใช้ PostgreSQL เก็บข้อมูล • โหลด ${rows.length} ไฟล์ (${rows.map(r=>r.name).join(', ')||'ยังว่าง'})`);
+  for(const r of rows){if(!/^[\w.-]+\.json$/.test(r.name)||r.name.startsWith('label-scans'))continue;await fs.writeFile(path.join(dir,r.name),zlib.gunzipSync(r.data))}
+  const files=rows.filter(r=>!r.name.startsWith('label-scans'));console.log(`Database: ใช้ PostgreSQL เก็บข้อมูล • ตั้งค่า/Master ${files.length} ไฟล์ (${files.map(r=>r.name).join(', ')||'ยังว่าง'}) • ข้อมูลสแกนเก็บรายแถว`);
   const root=path.resolve(dir),rename=fs.rename.bind(fs);
-  fs.rename=async function(from,to){const dst=path.resolve(String(to));if(path.dirname(dst)===root&&dst.endsWith('.json')){const name=path.basename(dst),raw=await fs.readFile(from),compact=Buffer.from(JSON.stringify(JSON.parse(raw.toString('utf8'))),'utf8'),gz=zlib.gzipSync(compact,{level:6});
+  fs.rename=async function(from,to){const dst=path.resolve(String(to));if(path.dirname(dst)===root&&dst.endsWith('.json')&&!path.basename(dst).startsWith('label-scans')){const name=path.basename(dst),raw=await fs.readFile(from),compact=Buffer.from(JSON.stringify(JSON.parse(raw.toString('utf8'))),'utf8'),gz=zlib.gzipSync(compact,{level:6});
       try{await query('INSERT INTO label_scan_files(name,data,size,updated_at) VALUES($1,$2,$3,now()) ON CONFLICT(name) DO UPDATE SET data=EXCLUDED.data,size=EXCLUDED.size,updated_at=now()',[name,gz,compact.length])}catch(e){await fs.unlink(from).catch(()=>{});throw Object.assign(Error('บันทึกลงฐานข้อมูลไม่สำเร็จ: '+e.message),{code:'EDB'})}}
     return rename(from,to)};
   const close=()=>pool.end().catch(()=>{});process.once('SIGTERM',()=>{close().finally(()=>process.exit(0))});
