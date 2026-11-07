@@ -38,7 +38,10 @@ window.LabelCommon={
  fmt(n){return Number(n).toLocaleString('en-US',{maximumFractionDigits:6})},
  today(){const p=parts(new Date());return `${p.year}-${p.month}-${p.day}`},
  id(){const x=new Uint32Array(4);crypto.getRandomValues(x);return Date.now().toString(36)+'_'+[...x].map(n=>n.toString(16).padStart(8,'0')).join('')},
- async request(url,options={}){const a=new AbortController(),timer=setTimeout(()=>a.abort(),15000);try{const r=await fetch(url,{...options,signal:a.signal,cache:'no-store'});const j=await r.json();if(!r.ok)throw Object.assign(Error(j.error||'Server ไม่ตอบรับ'),{status:r.status,...j});return j}finally{clearTimeout(timer)}},
+ async request(url,options={}){const a=new AbortController(),timer=setTimeout(()=>a.abort(),15000);let r,j;try{const headers={...(options.headers||{})};if(window.LabelAuthToken)headers['X-Admin-Token']=window.LabelAuthToken;r=await fetch(url,{...options,headers,signal:a.signal,cache:'no-store'});j=await r.json()}finally{clearTimeout(timer)}
+  // หน้าข้อมูลดิบ: ถ้า Server ขอ PIN ให้ถาม PIN แล้วส่งคำขอเดิมอีกครั้ง
+  if(r.status===401&&j.authRequired&&window.LabelAuth&&!options.authRetried&&!String(url).startsWith('/api/auth')){await window.LabelAuth.ask('');return LabelCommon.request(url,{...options,authRetried:true})}
+  if(!r.ok)throw Object.assign(Error(j.error||'Server ไม่ตอบรับ'),{status:r.status,...j});return j},
  // เติม SLoc เฉพาะที่มีการสแกนในวันที่เลือก (หน้าพิมพ์ป้าย)
  slocToken:0,
  async slocsByDate(select,date){const token=++this.slocToken,esc=this.esc;select.disabled=true;if(!date){select.innerHTML='<option value="">เลือกวันที่ก่อน</option>';return {count:0,slocs:[]}}select.innerHTML='<option value="">กำลังโหลด SLoc…</option>';const data=await this.request('/api/catalog?'+new URLSearchParams({date}));if(token!==this.slocToken)return null;select.innerHTML=data.slocs.length?'<option value="">เลือก SLoc</option>'+data.slocs.map(x=>`<option value="${esc(x)}">${esc(x)} (${data.counts[x].toLocaleString()})</option>`).join(''):'<option value="">ไม่มีข้อมูลสแกนในวันนี้</option>';select.disabled=!data.slocs.length;return data},

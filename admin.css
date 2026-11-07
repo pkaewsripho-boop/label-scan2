@@ -30,3 +30,24 @@ header .page-nav .button{justify-content:center;text-align:center}
 #importStatus{overflow-wrap:anywhere}
 #importStatus.success{color:#207238}
 #importStatus.error{color:#a52525}
+/* เลือก/ลบรายการ • PIN • ประวัติการลบ */
+th.pick,td.pick{width:44px;text-align:center}
+td.pick input,th.pick input{width:22px;height:22px;margin:0;cursor:pointer}
+tr.picked td{background:#fff4f4}
+.delete-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 10px}
+.delete-bar #pickCount{margin-right:auto;color:#515b6c}
+button.danger{color:#a52525;border-color:#d79b9b;background:#fff}
+button.danger:not(:disabled):hover{background:#fff0f0}
+#removeDialog,#pinDialog{border:1px solid #c9d1de;border-radius:6px;padding:20px;width:min(560px,calc(100% - 24px))}
+#removeDialog::backdrop,#pinDialog::backdrop{background:rgba(20,30,45,.45)}
+#removeDialog h2,#pinDialog h2{margin-top:0}
+#removeDialog input,#removeDialog textarea,#pinDialog input{width:100%;box-sizing:border-box;margin-bottom:10px;font:inherit}
+#removeList{margin:6px 0 14px;padding-left:20px;max-height:180px;overflow:auto;font-size:15px}
+.remove-buttons,.pin-buttons{display:flex;justify-content:flex-end;gap:10px;margin-top:8px}
+#removeStatus,#pinStatus{min-height:1.2em;color:#a52525;overflow-wrap:anywhere}
+#historyPanel{margin-top:16px}
+#historyPanel summary{cursor:pointer;font-size:18px;font-weight:600;min-height:40px}
+.history-wrap{overflow:auto;max-height:420px}
+.history-wrap table{min-width:900px}
+.logout-button{font-size:14px;padding:6px 10px;align-self:flex-start}
+@media(max-width:700px){.delete-bar #pickCount{flex-basis:100%}.delete-bar button{flex:1}}

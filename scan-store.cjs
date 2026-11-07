@@ -9,9 +9,9 @@ const match=(f,l)=>(!f.sloc||l.sloc===f.sloc)&&(!f.from||l.date>=f.from)&&(!f.to
 const page=(arr,limit,offset)=>limit?arr.slice(offset,offset+limit):arr.slice(offset);
 
 class FileStore{
-  constructor({file,validSaved}){this.file=file;this.validSaved=validSaved;this.records=[];this.batches=[];this.kind='file'}
-  async init(){try{const saved=JSON.parse(await fs.readFile(this.file,'utf8'));if(saved.version!==1||!Array.isArray(saved.records)||saved.batches!==undefined&&!Array.isArray(saved.batches))throw Error('Unsupported data');saved.records.forEach(this.validSaved);if(new Set(saved.records.map(l=>l.id)).size!==saved.records.length)throw Error('Duplicate stored IDs');const batches=saved.batches||[];for(const b of batches)if(!b||typeof b.batchId!=='string'||typeof b.signature!=='string'||!Array.isArray(b.recordIds)||!Number.isFinite(Date.parse(b.createdAt)))throw Error('Invalid batch receipt');if(new Set(batches.map(b=>b.batchId)).size!==batches.length)throw Error('Duplicate batch receipt');this.records=saved.records;this.batches=batches}catch(e){if(e.code==='ENOENT')await this.write([],[]);else throw Error('Cannot load stored data; existing data was NOT erased: '+e.message)}}
-  async write(records,batches){const tmp=this.file+'.tmp';await fs.writeFile(tmp,JSON.stringify({version:1,records,batches},null,2),'utf8');await fs.rename(tmp,this.file);this.records=records;this.batches=batches}
+  constructor({file,validSaved}){this.file=file;this.validSaved=validSaved;this.records=[];this.batches=[];this.deletions=[];this.kind='file'}
+  async init(){try{const saved=JSON.parse(await fs.readFile(this.file,'utf8'));if(saved.version!==1||!Array.isArray(saved.records)||saved.batches!==undefined&&!Array.isArray(saved.batches))throw Error('Unsupported data');saved.records.forEach(this.validSaved);if(new Set(saved.records.map(l=>l.id)).size!==saved.records.length)throw Error('Duplicate stored IDs');const batches=saved.batches||[];for(const b of batches)if(!b||typeof b.batchId!=='string'||typeof b.signature!=='string'||!Array.isArray(b.recordIds)||!Number.isFinite(Date.parse(b.createdAt)))throw Error('Invalid batch receipt');if(new Set(batches.map(b=>b.batchId)).size!==batches.length)throw Error('Duplicate batch receipt');this.records=saved.records;this.batches=batches;this.deletions=Array.isArray(saved.deletions)?saved.deletions:[]}catch(e){if(e.code==='ENOENT')await this.write([],[]);else throw Error('Cannot load stored data; existing data was NOT erased: '+e.message)}}
+  async write(records,batches,deletions=this.deletions){const tmp=this.file+'.tmp';await fs.writeFile(tmp,JSON.stringify({version:1,records,batches,...(deletions.length?{deletions}:{})},null,2),'utf8');await fs.rename(tmp,this.file);this.records=records;this.batches=batches;this.deletions=deletions}
   async count(){return this.records.length}
   async catalog({from,to}){const counts={};for(const l of this.records)if((!from||l.date>=from)&&(!to||l.date<=to))counts[l.sloc]=(counts[l.sloc]||0)+1;return counts}
   async query(f,{limit=0,offset=0}={}){const all=this.records.filter(l=>match(f,l));return {rows:page(all,limit,offset),total:all.length}}
@@ -20,6 +20,8 @@ class FileStore{
   async existingKeys(items){const have=new Set(this.records.map(key));return new Set(items.map(key).filter(k=>have.has(k)))}
   async existingIds(ids){const have=new Set(this.records.map(l=>l.id));return new Set(ids.filter(id=>have.has(id)))}
   async insert(rows,receipt){await this.write([...this.records,...rows],receipt?[...this.batches,receipt]:this.batches)}
+  async remove(ids,meta){const want=new Set(ids),gone=this.records.filter(l=>want.has(l.id));if(!gone.length)return [];const log=gone.map(record=>({deletedAt:meta.at,by:meta.by,reason:meta.reason,record}));await this.write(this.records.filter(l=>!want.has(l.id)),this.batches,[...this.deletions,...log]);return gone}
+  async deletionLog(limit){return this.deletions.slice(-limit).reverse()}
   async purge(cutoff){const keep=this.records.filter(l=>!(Date.parse(l.createdAt)<cutoff));if(keep.length===this.records.length)return 0;const ids=new Set(keep.map(l=>l.id)),n=this.records.length-keep.length;await this.write(keep,this.batches.filter(b=>!(Date.parse(b.createdAt)<cutoff)&&b.recordIds.every(id=>ids.has(id))));return n}
 }
 
@@ -30,6 +32,7 @@ class PgStore{
     await this.q(`CREATE TABLE IF NOT EXISTS label_scans(seq bigserial UNIQUE, id text PRIMARY KEY, sloc text NOT NULL, work_date text NOT NULL, label_id text NOT NULL, material text NOT NULL, batch text NOT NULL, created_at timestamptz NOT NULL, data jsonb NOT NULL, UNIQUE(sloc,work_date,label_id))`);
     await this.q('CREATE INDEX IF NOT EXISTS label_scans_date_sloc ON label_scans(work_date,sloc)');
     await this.q('CREATE INDEX IF NOT EXISTS label_scans_created ON label_scans(created_at)');
+    await this.q('CREATE TABLE IF NOT EXISTS label_scan_deletions(seq bigserial PRIMARY KEY, deleted_at timestamptz NOT NULL, deleted_by text NOT NULL, reason text NOT NULL, record_id text NOT NULL, data jsonb NOT NULL)');
     await this.q('CREATE TABLE IF NOT EXISTS label_scan_batches(batch_id text PRIMARY KEY, signature text NOT NULL, record_ids jsonb NOT NULL, created_at timestamptz NOT NULL)');
     await this.migrateBlob();
   }
@@ -51,6 +54,8 @@ class PgStore{
   async existingKeys(items){if(!items.length)return new Set();const out=new Set();for(let i=0;i<items.length;i+=1000){const part=items.slice(i,i+1000),{rows}=await this.q('SELECT sloc,work_date,label_id FROM label_scans WHERE (sloc,work_date,label_id) IN (SELECT * FROM unnest($1::text[],$2::text[],$3::text[]))',[part.map(x=>x.sloc),part.map(x=>x.date),part.map(x=>x.labelId)]);for(const r of rows)out.add(JSON.stringify([r.sloc,r.work_date,r.label_id]))}return out}
   async existingIds(ids){if(!ids.length)return new Set();const {rows}=await this.q('SELECT id FROM label_scans WHERE id=ANY($1::text[])',[ids]);return new Set(rows.map(r=>r.id))}
   async insert(rows,receipt){const c=await this.pool.connect();try{await c.query('BEGIN');for(let i=0;i<rows.length;i+=500)await this.insertRows(c,rows.slice(i,i+500),false);if(receipt)await c.query('INSERT INTO label_scan_batches(batch_id,signature,record_ids,created_at) VALUES($1,$2,$3,$4)',[receipt.batchId,receipt.signature,JSON.stringify(receipt.recordIds),receipt.createdAt]);await c.query('COMMIT')}catch(e){await c.query('ROLLBACK').catch(()=>{});if(e.code==='23505')throw Object.assign(Error('พบรายการซ้ำในฐานข้อมูล ไม่ได้บันทึกทั้งชุด กรุณาลองใหม่'),{status:409});throw Object.assign(Error('บันทึกลงฐานข้อมูลไม่สำเร็จ: '+e.message),{code:'EDB'})}finally{c.release()}}
+  async remove(ids,meta){const c=await this.pool.connect();try{await c.query('BEGIN');const {rows}=await c.query('DELETE FROM label_scans WHERE id=ANY($1::text[]) RETURNING id,data',[ids]);for(const r of rows)await c.query('INSERT INTO label_scan_deletions(deleted_at,deleted_by,reason,record_id,data) VALUES($1,$2,$3,$4,$5)',[meta.at,meta.by,meta.reason,r.id,JSON.stringify(r.data)]);await c.query('COMMIT');return rows.map(r=>r.data)}catch(e){await c.query('ROLLBACK').catch(()=>{});throw Object.assign(Error('ลบในฐานข้อมูลไม่สำเร็จ: '+e.message),{code:'EDB'})}finally{c.release()}}
+  async deletionLog(limit){return (await this.q('SELECT deleted_at,deleted_by,reason,data FROM label_scan_deletions ORDER BY seq DESC LIMIT $1',[limit])).rows.map(r=>({deletedAt:r.deleted_at.toISOString(),by:r.deleted_by,reason:r.reason,record:r.data}))}
   async purge(cutoff){const t=new Date(cutoff).toISOString(),r=await this.q('DELETE FROM label_scans WHERE created_at<$1',[t]);await this.q('DELETE FROM label_scan_batches WHERE created_at<$1',[t]);return r.rowCount}
 }
 module.exports={FileStore,PgStore};
