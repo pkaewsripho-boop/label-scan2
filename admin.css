@@ -23,3 +23,10 @@ header .page-nav .button{justify-content:center;text-align:center}
 @media(max-width:700px){header .page-nav{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr) minmax(0,1fr);width:100%}header .page-nav .button{font-size:15px;line-height:1.25;white-space:normal;min-height:52px;padding:6px 6px;overflow-wrap:anywhere}}
 /* ลำดับใหม่: วันที่ → SLoc → ค้นหา */
 @media(max-width:1100px){.filters>div:first-child{grid-column:auto}.filters>div:nth-child(3),.filters .search{grid-column:1/-1}}
+#importPanel{margin-top:16px}
+#importPanel summary{cursor:pointer;font-size:18px;font-weight:600;min-height:40px}
+#importPanel input[type=file]{margin-top:10px;max-width:100%}
+.import-buttons{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+#importStatus{overflow-wrap:anywhere}
+#importStatus.success{color:#207238}
+#importStatus.error{color:#a52525}
