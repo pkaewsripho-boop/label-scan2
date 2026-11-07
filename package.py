@@ -9,7 +9,7 @@ build('LabelScan','body.html','style.css',['qr.js','common.js','vendor/jsqr.js',
 build('Admin','admin-body.html','admin.css',['common.js','vendor/xlsx.js','export.js','admin.js','presence.js'])
 build('Tags','tags-body.html',['tags.css','printer-ui.css'],['common.js','vendor/xlsx.js','master-import.js','print-pdf.js','printer-ui.js','tags.js','presence.js'])
 build('Silicon','silicon-body.html',['silicon.css','printer-ui.css'],['common.js','print-pdf.js','printer-ui.js','silicon.js','presence.js'])
-files=[p for p in P.rglob('*') if p.is_file() and p.relative_to(P).parts[0] not in ('data','__pycache__') and p.suffix not in ('.zip',)]
+files=[p for p in P.rglob('*') if p.is_file() and p.relative_to(P).parts[0] not in ('data','__pycache__','node_modules','.git') and p.suffix not in ('.zip',)]
 with zipfile.ZipFile(P.parent/'LabelScan-Batch-3003.zip','w',zipfile.ZIP_DEFLATED) as z:
     for p in files:z.write(p,'label-scan-batch/'+str(p.relative_to(P)))
 print('Built HTML and ZIP; files:',len(files))
