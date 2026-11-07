@@ -1,0 +1,15 @@
+
+.filters{grid-template-columns:1fr 1fr auto}
+.print-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px}
+.print-actions .copies{display:inline-flex;align-items:center;gap:6px;margin:0;font-size:16px}
+.print-actions .copies select{width:auto;min-width:64px}
+#printStatus,#printerStatus{font-size:15px}
+#printStatus.success,#printerStatus.success{color:#207238}
+#printStatus.error,#printerStatus.error,#printerSummary.error{color:#a52525}
+#printerSummary{font-size:15px;font-weight:400;color:#59616e;margin-left:10px;overflow-wrap:anywhere}
+#printerPanel summary{cursor:pointer;min-height:44px;font-size:20px;font-weight:600}
+#printerUrl{width:100%}
+.printer-buttons{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+@media(max-width:1000px){.filters{grid-template-columns:1fr 1fr}.filters button{grid-column:1/-1}}
+@media(max-width:600px){.print-actions{display:grid;grid-template-columns:1fr 1fr}.print-actions>*{width:100%}.print-actions #serverPrint{grid-column:1/-1;font-size:18px}.print-actions .copies{justify-content:flex-start}.print-actions .copies select{flex:1}#printerPanel summary{font-size:18px}#printerSummary{display:block;margin:4px 0 0}.printer-buttons{display:grid;grid-template-columns:1fr}}
+@media print{#printActions,#printerSlot{display:none!important}}

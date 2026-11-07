@@ -1,0 +1,7 @@
+# ข้อมูลจริง ห้ามขึ้น GitHub
+data/
+*.zip
+*.tmp
+node_modules/
+__pycache__/
+.DS_Store

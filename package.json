@@ -1,0 +1,13 @@
+{
+  "name": "label-scan",
+  "version": "6.11.69",
+  "private": true,
+  "description": "Label Scan / Stock Count (no external dependencies)",
+  "scripts": {
+    "start": "node server.cjs",
+    "build-html": "python3 package.py"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
