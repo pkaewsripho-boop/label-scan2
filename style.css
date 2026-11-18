@@ -40,3 +40,16 @@ input:disabled{opacity:1;color:#4a5565;background:#f1f3f7;cursor:not-allowed}.ad
 .qty-summary .qty-label{font-size:15px}
 .qty-summary strong{font-size:19px;line-height:1.2}
 .qty-summary .qty-selected{font-size:14px;line-height:1.25}
+
+/* แจกแจงยอดรอบันทึก: แยกไอเทม / Batch แบบย่อ */
+.qty-summary .qty-toggle{margin-left:auto;min-height:0;padding:2px 8px;font-size:13px;font-weight:600;color:#173f8a;background:#fff;border:1px solid #b9c7e2;border-radius:12px;line-height:1.4}
+.qty-breakdown{flex-basis:100%;max-height:132px;overflow-y:auto;margin-top:4px;border-top:1px solid #c9d5ea;padding-top:3px;font-size:13px;line-height:1.35}
+.qty-breakdown .bd-item,.qty-breakdown .bd-batch{display:grid;grid-template-columns:minmax(0,1fr) 3.2em auto;gap:6px;align-items:baseline;padding:1px 0}
+.qty-breakdown .bd-item{font-weight:700;color:#173f8a;margin-top:3px}
+.qty-breakdown .bd-item:first-child{margin-top:0}
+.qty-breakdown .bd-batch{color:#3a4456;padding-left:6px}
+.qty-breakdown .bd-mat{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qty-breakdown .bd-n{text-align:right;color:#59616e;font-weight:400}
+.qty-breakdown .bd-n::after{content:" ใบ";font-size:11px}
+.qty-breakdown .bd-sum{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.qty-breakdown small{font-size:11px;font-weight:400}
