@@ -46,3 +46,14 @@
 .hg-list .ck{flex:none;width:13px;height:13px;border:1px solid #000;background:#fff}
 .hg-list .w{margin-left:auto;text-align:right;overflow:hidden;text-overflow:clip}
 @media print{.hg-list li{gap:1mm;padding:0.6mm 1.2mm 0.6mm 0.8mm}.hg-list li::before{min-width:3.2mm}.hg-list .ck{width:3mm;height:3mm;border:0.2mm solid #000}}
+/* ขยายช่องแจกแจงให้อ่าน/ติ๊กง่าย: 8 ช่องต่อแถว ตัวเลขใหญ่ กล่องใหญ่ */
+.hg-list{grid-template-columns:repeat(8,minmax(0,1fr))}
+.hg-list li{font-size:19px;padding:6px 8px 6px 5px;gap:8px}
+.hg-list li::before{font-size:12px;color:#555;min-width:2em}
+.hg-list .ck{width:18px;height:18px;border-width:1.5px}
+.hg-list .w{font-weight:600}
+@media(max-width:800px){.hg-list{grid-template-columns:repeat(4,minmax(0,1fr))}.hg-list li{font-size:17px}}
+@media(max-width:420px){.hg-list{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media print{.hg-list{grid-template-columns:repeat(8,minmax(0,1fr))}.hg-list li{font-size:12.5pt;line-height:1.3;padding:1.2mm 1.5mm 1.2mm 0.8mm;gap:1.5mm}.hg-list li::before{font-size:7pt;min-width:4.2mm;color:#555}.hg-list .ck{width:4.2mm;height:4.2mm;border:0.3mm solid #000}}
+@media print{.hg-list li{font-size:12pt;padding:1.2mm 1.2mm 1.2mm 0.6mm;gap:1mm}.hg-list li::before{min-width:3.6mm;font-size:6.5pt}.hg-list .w{font-weight:400;overflow:visible}.hg-list .ck{width:4mm;height:4mm}}
+.hg-list .w{overflow:visible}
