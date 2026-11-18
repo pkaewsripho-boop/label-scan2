@@ -105,26 +105,35 @@ function drawSilicon(ctx,data,layout,index,printedAt){blank(ctx);const {ws,pages
   for(const r of rows){for(let i=0;i<6;i++){cell(ctx,xs[i],y,ws[i],r.h);font(ctx,SIL.size,false);ctx.fillStyle='#000';ctx.textBaseline='middle';ctx.textAlign=i===5?'right':'left';const tx=i===5?xs[i]+ws[i]-SIL.padX:xs[i]+SIL.padX;let ty=y+SIL.padY+SIL.size*SIL.lh/2;for(const l of r.lines[i]){ctx.fillText(l,tx,ty);ty+=SIL.size*SIL.lh}}y+=r.h}
   line(ctx,SIL.x,SIL.bottom-8*PT*1.6,SIL.w,`เวลาจัดทำ (ไทย): ${printedAt} • ข้อมูลที่บันทึกแล้วบน Server เท่านั้น`,`หน้า ${index+1}/${pages.length}`,8*PT)}
 
-// ---------- ใบส่งมอบ: หัวกลุ่ม 3 แถว + แจกแจงจำนวน 10 ช่องต่อแถว • ขึ้นหน้าใหม่แล้วต่อกลุ่มเดิมพร้อมป้าย (ต่อ) ----------
-const HO={x:10*MM,w:190*MM,top:10*MM,bottom:(297-10)*MM,head:14*MM,foot:7*MM,c1:13*MM,c3:46*MM,r1:8.5*MM,r2:7*MM,r3:8.5*MM,row:7.6*MM,cols:8,gap:3.5*MM,sign:20*MM};
+// ---------- ใบส่งมอบ ----------
+// หน้าละไม่เกิน 60 ลาเบล • 6 ช่องต่อแถว เรียงลำดับลงตามคอลัมน์ (1–10 คอลัมน์แรก) • กลุ่มที่ต่อหน้าใหม่จะมีหัวกลุ่มซ้ำพร้อม (ต่อ)
+// แผนการแบ่งหน้าใช้ร่วมกันทั้ง PDF และหน้าเว็บ/พิมพ์จากเบราว์เซอร์ จึงแบ่งหน้าตรงกัน
+const HP={perPage:60,cols:6,bodyMM:252,headMM:24,rowMM:12,gapMM:3,signMM:22};
+function handoverPlan(data){const pages=[];let cur,used,count;const open=()=>{cur={blocks:[],sign:false};pages.push(cur);used=0;count=0};open();
+  for(const g of data.groups){let i=0,first=true;const n=g.entries.length;
+    while(i<n){if(count>=HP.perPage||used+HP.headMM+HP.rowMM>HP.bodyMM)open();
+      const fitRows=Math.floor((HP.bodyMM-used-HP.headMM)/HP.rowMM),take=Math.min(n-i,HP.perPage-count,fitRows*HP.cols),rows=Math.ceil(take/HP.cols);
+      cur.blocks.push({g,cont:!first,start:i,take,rows});used+=HP.headMM+rows*HP.rowMM+HP.gapMM;count+=take;i+=take;first=false;if(i<n)open()}}
+  if(used+HP.signMM>HP.bodyMM)open();cur.sign=true;return pages}
+const HO={x:10*MM,w:190*MM,top:10*MM,bottom:(297-10)*MM,c1:13*MM,c3:46*MM,r1:8.5*MM,r2:7*MM,r3:8.5*MM};
 function microSum(groups){const u=new Map(),m=v=>{const [a,b='']=String(v).split('.');return /^\d+$/.test(a)&&/^\d{0,6}$/.test(b)?BigInt(a)*1000000n+BigInt(b.padEnd(6,'0')||'0'):0n};for(const g of groups)u.set(g.unit||'',(u.get(g.unit||'')||0n)+m(g.total));return [...u].map(([k,v])=>{const i=(v/1000000n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,','),f=(v%1000000n).toString().padStart(6,'0').replace(/0+$/,'');return (f?i+'.'+f:i)+' '+(k||'ไม่ระบุหน่วย')}).join(' • ')}
-function handoverPlan(data){const pages=[[]],top=HO.top+HO.head,bottom=HO.bottom-HO.foot,groupH=HO.r1+HO.r2+HO.r3;let y=top;const add=f=>pages[pages.length-1].push(f),next=()=>{pages.push([]);y=top};
-  for(const g of data.groups){const rows=Math.ceil(g.entries.length/HO.cols);if(y+groupH+HO.row>bottom&&y>top)next();const gy=y;add(ctx=>drawGroupHead(ctx,g,gy));y+=groupH;
-    for(let r=0;r<rows;r++){if(y+HO.row>bottom){next();const cy=y;add(ctx=>{font(ctx,8.5*PT,true);ctx.fillStyle='#000';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(`ITEM ${g.material} • Batch ${g.batch||'—'} (ต่อ)`,HO.x,cy+0.5*MM)});y+=5*MM}const ry=y,start=r*HO.cols;add(ctx=>drawWeights(ctx,g,start,ry));y+=HO.row}y+=HO.gap}
-  if(y+HO.sign>bottom)next();const sy=y+4*MM;add(ctx=>drawSign(ctx,sy));return pages}
-function drawGroupHead(ctx,g,y){const x=HO.x,w=HO.w,mid=w-HO.c1-HO.c3,label={size:8.5*PT,bold:true,align:'left',pad:1.8*MM},xs=[x,x+HO.c1,x+HO.c1+mid];
-  cell(ctx,xs[0],y,HO.c1,HO.r1);box(ctx,xs[0],y,HO.c1,HO.r1,'ITEM',label);cell(ctx,xs[1],y,mid,HO.r1);box(ctx,xs[1],y,mid,HO.r1,g.material,{size:13*PT,bold:true,align:'left',pad:1.8*MM});cell(ctx,xs[2],y,HO.c3,HO.r1);box(ctx,xs[2],y,HO.c3,HO.r1,'ยอดรวมทั้งกลุ่ม',{size:8.5*PT,bold:true});y+=HO.r1;
+function drawGroupHead(ctx,g,y,cont){const x=HO.x,w=HO.w,mid=w-HO.c1-HO.c3,label={size:8.5*PT,bold:true,align:'left',pad:1.8*MM},xs=[x,x+HO.c1,x+HO.c1+mid];
+  cell(ctx,xs[0],y,HO.c1,HO.r1);box(ctx,xs[0],y,HO.c1,HO.r1,'ITEM',label);cell(ctx,xs[1],y,mid,HO.r1);box(ctx,xs[1],y,mid,HO.r1,g.material+(cont?'  (ต่อ)':''),{size:13*PT,bold:true,align:'left',pad:1.8*MM});cell(ctx,xs[2],y,HO.c3,HO.r1);box(ctx,xs[2],y,HO.c3,HO.r1,'ยอดรวมทั้งกลุ่ม',{size:8.5*PT,bold:true});y+=HO.r1;
   cell(ctx,xs[0],y,HO.c1,HO.r2);box(ctx,xs[0],y,HO.c1,HO.r2,'Descr',label);cell(ctx,xs[1],y,mid,HO.r2);box(ctx,xs[1],y,mid,HO.r2,g.description||'— ไม่พบใน Master Data —',{size:9*PT,min:6.5*PT,bold:true,align:'left',pad:1.8*MM,padY:0.6*MM,lh:1.2});cell(ctx,xs[2],y,HO.c3,HO.r2);box(ctx,xs[2],y,HO.c3,HO.r2,`${g.unit||'ไม่ระบุหน่วย'} • ${g.count.toLocaleString()} ลาเบล`,{size:9*PT,bold:true});y+=HO.r2;
   cell(ctx,xs[0],y,HO.c1,HO.r3);box(ctx,xs[0],y,HO.c1,HO.r3,'Batch',label);cell(ctx,xs[1],y,mid,HO.r3);box(ctx,xs[1],y,mid,HO.r3,g.batch||'—',{size:12*PT,bold:true,align:'left',pad:1.8*MM});cell(ctx,xs[2],y,HO.c3,HO.r3);box(ctx,xs[2],y,HO.c3,HO.r3,g.total,{size:13*PT,bold:true,align:'right',pad:1.8*MM})}
-function drawWeights(ctx,g,start,y){const cw=HO.w/HO.cols,bs=4.2*MM;for(let c=0;c<HO.cols;c++){const e=g.entries[start+c],x=HO.x+c*cw;cell(ctx,x,y,cw,HO.row);if(!e)continue;font(ctx,7*PT,false);ctx.fillStyle='#555';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(String(start+c+1),x+0.8*MM,y+HO.row/2);
-    // ช่องตรวจเช็ค [ ]
-    const bx=x+5.6*MM,by=y+(HO.row-bs)/2;ctx.save();ctx.lineWidth=0.3*MM;ctx.strokeStyle='#000';ctx.strokeRect(bx,by,bs,bs);ctx.restore();
-    let size=12.5*PT;const room=cw-(5.6*MM+bs+1*MM)-1.5*MM;font(ctx,size,false);while(ctx.measureText(e.weight).width>room&&size>5.5*PT){size-=0.25*PT;font(ctx,size,false)}ctx.fillStyle='#000';ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText(e.weight,x+cw-1.5*MM,y+HO.row/2+0.3*MM)}}
-function drawSign(ctx,y){font(ctx,10*PT,false);ctx.fillStyle='#000';ctx.textBaseline='alphabetic';ctx.textAlign='left';const half=HO.w/2;for(const [i,t] of ['ผู้ส่งมอบ','ผู้รับมอบ'].entries()){const x=HO.x+i*half;ctx.fillText(t,x,y+8*MM);ctx.fillText('วันที่',x+half*0.62,y+8*MM);ctx.setLineDash([0.6*MM,0.8*MM]);ctx.lineWidth=0.2*MM;ctx.beginPath();ctx.moveTo(x+17*MM,y+8.5*MM);ctx.lineTo(x+half*0.6,y+8.5*MM);ctx.moveTo(x+half*0.62+11*MM,y+8.5*MM);ctx.lineTo(x+half-6*MM,y+8.5*MM);ctx.stroke();ctx.setLineDash([]);ctx.lineWidth=0.3*MM}}
-function drawHandoverPage(ctx,data,pages,i,printedAt){blank(ctx);const labels=data.groups.reduce((n,g)=>n+g.count,0);font(ctx,16*PT,true);ctx.fillStyle='#000';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText('ใบส่งมอบ',HO.x,HO.top);
-  font(ctx,9*PT,false);ctx.textAlign='right';ctx.fillText(`SLoc ${data.sloc} • วันที่งาน ${data.date} • ${data.groups.length} กลุ่ม • ${labels.toLocaleString()} ลาเบล`,HO.x+HO.w,HO.top+0.5*MM);ctx.fillText(`รวม ${microSum(data.groups)}`,HO.x+HO.w,HO.top+5*MM);
+// ช่องแจกแจง: [เลขลำดับบนพื้นเทา] [☐] [จำนวน]
+function drawCells(ctx,b,y){const cw=HO.w/HP.cols,rh=HP.rowMM*MM,nw=10*MM,bs=5.5*MM;
+  for(let r=0;r<b.rows;r++)for(let c=0;c<HP.cols;c++){const j=c*b.rows+r,x=HO.x+c*cw,yy=y+r*rh;ctx.save();ctx.fillStyle='#e9e9e9';ctx.fillRect(x,yy,nw,rh);ctx.restore();cell(ctx,x,yy,cw,rh);ctx.beginPath();ctx.moveTo(x+nw,yy);ctx.lineTo(x+nw,yy+rh);ctx.stroke();if(j>=b.take)continue;const e=b.g.entries[b.start+j];
+    font(ctx,11*PT,true);ctx.fillStyle='#000';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(b.start+j+1),x+nw/2,yy+rh/2+0.2*MM);
+    ctx.save();ctx.lineWidth=0.35*MM;ctx.strokeRect(x+nw+1.8*MM,yy+(rh-bs)/2,bs,bs);ctx.restore();
+    let size=16*PT;const room=cw-nw-1.8*MM-bs-2.5*MM;font(ctx,size,true);while(ctx.measureText(e.weight).width>room&&size>8*PT){size-=0.5*PT;font(ctx,size,true)}ctx.textAlign='right';ctx.fillText(e.weight,x+cw-1.8*MM,yy+rh/2+0.4*MM)}}
+function drawSign(ctx,y){font(ctx,11*PT,false);ctx.fillStyle='#000';ctx.textBaseline='alphabetic';ctx.textAlign='left';const half=HO.w/2;for(const [i,t] of ['ผู้ส่งมอบ','ผู้รับมอบ'].entries()){const x=HO.x+i*half;ctx.fillText(t,x,y+10*MM);ctx.fillText('วันที่',x+half*0.62,y+10*MM);ctx.setLineDash([0.6*MM,0.8*MM]);ctx.lineWidth=0.2*MM;ctx.beginPath();ctx.moveTo(x+19*MM,y+10.5*MM);ctx.lineTo(x+half*0.6,y+10.5*MM);ctx.moveTo(x+half*0.62+12*MM,y+10.5*MM);ctx.lineTo(x+half-6*MM,y+10.5*MM);ctx.stroke();ctx.setLineDash([]);ctx.lineWidth=0.3*MM}}
+function drawHandoverPage(ctx,data,pages,i,printedAt){blank(ctx);const labels=data.groups.reduce((n,g)=>n+g.count,0),page=pages[i],onPage=page.blocks.reduce((n,b)=>n+b.take,0);
+  font(ctx,16*PT,true);ctx.fillStyle='#000';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText('ใบส่งมอบ',HO.x,HO.top);
+  font(ctx,9*PT,false);ctx.textAlign='right';ctx.fillText(`SLoc ${data.sloc} • วันที่งาน ${data.date} • ${data.groups.length} กลุ่ม • ${labels.toLocaleString()} ลาเบล`,HO.x+HO.w,HO.top+0.5*MM);ctx.fillText(`รวม ${microSum(data.groups)} • หน้านี้ ${onPage} ลาเบล`,HO.x+HO.w,HO.top+5*MM);
   ctx.lineWidth=0.5*MM;ctx.beginPath();ctx.moveTo(HO.x,HO.top+10.5*MM);ctx.lineTo(HO.x+HO.w,HO.top+10.5*MM);ctx.stroke();ctx.lineWidth=0.3*MM;
-  for(const f of pages[i])f(ctx);line(ctx,HO.x,HO.bottom-8*PT*1.4,HO.w,`พิมพ์เมื่อ (ไทย): ${printedAt} • ข้อมูลที่บันทึกแล้วบน Server`,`หน้า ${i+1}/${pages.length}`,7.5*PT)}
+  let y=HO.top+14*MM;for(const b of page.blocks){drawGroupHead(ctx,b.g,y,b.cont);y+=HP.headMM*MM;drawCells(ctx,b,y);y+=(b.rows*HP.rowMM+HP.gapMM)*MM}
+  if(page.sign)drawSign(ctx,y+2*MM);line(ctx,HO.x,HO.bottom-8*PT*1.4,HO.w,`พิมพ์เมื่อ (ไทย): ${printedAt} • ข้อมูลที่บันทึกแล้วบน Server`,`หน้า ${i+1}/${pages.length}`,7.5*PT)}
 
 // ---------- PDF ที่ห่อภาพ JPEG หน้าละ 1 ภาพ ----------
 function utf16(s){let h='FEFF';s=String(s);for(let i=0;i<s.length;i++)h+=s.charCodeAt(i).toString(16).padStart(4,'0').toUpperCase();return '<'+h+'>'}
@@ -143,6 +152,7 @@ window.PrintPDF={
   async tags(data,{printedAt,onProgress}={}){const pages=tagPages(data);if(!pages.length)throw Error('ไม่มีหน้าที่จะพิมพ์');return render(pages.length,(ctx,i)=>drawTag(ctx,data,pages[i],printedAt),`Tag ${data.sloc} ${data.date}`,onProgress)},
   async silicon(data,{printedAt,onProgress}={}){if(!data.rows.length)throw Error('ไม่มีรายการที่จะพิมพ์');await loadFonts();const probe=document.createElement('canvas').getContext('2d'),layout=siliconLayout(probe,data);return render(layout.pages.length,(ctx,i)=>drawSilicon(ctx,data,layout,i,printedAt),`แจกแจงรายการ ${data.sloc} ${data.date}`,onProgress)},
   async handover(data,{printedAt,onProgress}={}){if(!data.groups.length)throw Error('ไม่มีรายการที่จะพิมพ์');await loadFonts();const pages=handoverPlan(data);return render(pages.length,(ctx,i)=>drawHandoverPage(ctx,data,pages,i,printedAt),`ใบส่งมอบ ${data.sloc} ${data.date}`,onProgress)},
+  handoverPlan,
   buildPDF,wrap
 };
 })();
