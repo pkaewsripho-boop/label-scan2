@@ -14,7 +14,7 @@ class FileStore{
   async write(records,batches,deletions=this.deletions){const tmp=this.file+'.tmp';await fs.writeFile(tmp,JSON.stringify({version:1,records,batches,...(deletions.length?{deletions}:{})},null,2),'utf8');await fs.rename(tmp,this.file);this.records=records;this.batches=batches;this.deletions=deletions}
   async count(){return this.records.length}
   async catalog({from,to}){const counts={};for(const l of this.records)if((!from||l.date>=from)&&(!to||l.date<=to))counts[l.sloc]=(counts[l.sloc]||0)+1;return counts}
-  async query(f,{limit=0,offset=0}={}){const all=this.records.filter(l=>match(f,l));return {rows:page(all,limit,offset),total:all.length}}
+  async query(f,{limit=0,offset=0,newest=false}={}){let all=this.records.filter(l=>match(f,l));if(newest)all=all.map((l,i)=>[l,i]).sort((a,b)=>(Date.parse(b[0].createdAt)-Date.parse(a[0].createdAt))||(b[1]-a[1])).map(x=>x[0]);return {rows:page(all,limit,offset),total:all.length}}
   async bySlocDate(sloc,date){return this.records.filter(x=>x.sloc===sloc&&x.date===date)}
   async findBatch(id){return this.batches.find(b=>b.batchId===id)||null}
   async existingKeys(items){const have=new Set(this.records.map(key));return new Set(items.map(key).filter(k=>have.has(k)))}
@@ -47,7 +47,7 @@ class PgStore{
   async count(){return Number((await this.q('SELECT count(*) n FROM label_scans')).rows[0].n)}
   where(f){const w=[],a=[];if(f.sloc){a.push(f.sloc);w.push(`sloc=$${a.length}`)}if(f.from){a.push(f.from);w.push(`work_date>=$${a.length}`)}if(f.to){a.push(f.to);w.push(`work_date<=$${a.length}`)}for(const t of f.terms){a.push('%'+t.replace(/[\\%_]/g,m=>'\\'+m)+'%');w.push(`(lower(material) LIKE $${a.length} OR lower(batch) LIKE $${a.length})`)}return {sql:w.length?' WHERE '+w.join(' AND '):'',args:a}}
   async catalog({from,to}){const w=this.where({from,to,terms:[]}),{rows}=await this.q(`SELECT sloc,count(*) n FROM label_scans${w.sql} GROUP BY sloc`,w.args),counts={};for(const r of rows)counts[r.sloc]=Number(r.n);return counts}
-  async query(f,{limit=0,offset=0}={}){const w=this.where(f),a=[...w.args];let sql=`SELECT data FROM label_scans${w.sql} ORDER BY seq`;if(limit){a.push(limit);sql+=` LIMIT $${a.length}`}if(offset){a.push(offset);sql+=` OFFSET $${a.length}`}
+  async query(f,{limit=0,offset=0,newest=false}={}){const w=this.where(f),a=[...w.args];let sql=`SELECT data FROM label_scans${w.sql} ORDER BY ${newest?'created_at DESC, seq DESC':'seq'}`;if(limit){a.push(limit);sql+=` LIMIT $${a.length}`}if(offset){a.push(offset);sql+=` OFFSET $${a.length}`}
     const [{rows},total]=await Promise.all([this.q(sql,a),this.q(`SELECT count(*) n FROM label_scans${w.sql}`,w.args)]);return {rows:rows.map(r=>r.data),total:Number(total.rows[0].n)}}
   async bySlocDate(sloc,date){return (await this.q('SELECT data FROM label_scans WHERE sloc=$1 AND work_date=$2 ORDER BY seq',[sloc,date])).rows.map(r=>r.data)}
   async findBatch(id){const r=(await this.q('SELECT batch_id,signature,record_ids,created_at FROM label_scan_batches WHERE batch_id=$1',[id])).rows[0];return r?{batchId:r.batch_id,signature:r.signature,recordIds:r.record_ids,createdAt:r.created_at.toISOString()}:null}

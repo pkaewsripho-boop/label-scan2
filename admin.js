@@ -12,7 +12,7 @@ if(kind==='excel'||kind==='json'){const all=await fetchAll(f,'กำลังด
   if(kind==='excel'){LabelExport.excel(all,f);status(!f.sloc&&!f.from&&!f.to&&!f.q?`ส่งออก Excel ทั้งหมดแล้ว ${all.length.toLocaleString()} รายการ (ทุก SLoc • ทุกวันที่ • ไม่ได้กรอง)`:`ส่งออก Excel แล้ว ${all.length.toLocaleString()} รายการ ครบทุกหน้าตามตัวกรอง`)}
   else{download(new Blob([JSON.stringify({exportedAt:new Date().toISOString(),exportedAtThailand:thaiTime(new Date()),displayTimeZone:LabelCommon.timeZone,filters:f,count:all.length,records:all},null,2)],{type:'application/json'}),'Label_Scans_'+(f.sloc||'ALL')+'_'+today()+'.json');status(`ส่งออก JSON แล้ว ${all.length.toLocaleString()} รายการ`)}
   return}
-status('กำลังเรียกข้อมูลจาก Server…');const data=await request(endpoint(f)+'&limit='+size+'&offset='+page*size);if(revision!==searchRevision)return;
+status('กำลังเรียกข้อมูลจาก Server…');const data=await request(endpoint(f)+'&order=new&limit='+size+'&offset='+page*size);if(revision!==searchRevision)return;
 total=data.count;const pages=Math.max(1,Math.ceil(total/size));if(page>pages-1&&total){page=pages-1;lock(false);return load(kind,true)}rows=data.records;render();
 history.replaceState(null,'','/admin?'+new URLSearchParams(f));status(`เรียกข้อมูลแล้ว ${total.toLocaleString()} รายการ • ${f.sloc||'ทุก SLoc'} • ทุกผู้สแกน${pages>1?` • หน้า ${page+1}/${pages}`:''}`)}
 catch(e){if(revision===searchRevision)status(e.message||'เรียกข้อมูลไม่ได้ กรุณาตรวจการเชื่อมต่อ',true)}finally{lock(false);if(revision!==searchRevision)load()}}
