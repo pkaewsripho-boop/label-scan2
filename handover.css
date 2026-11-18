@@ -1,0 +1,48 @@
+
+/* ===== ใบส่งมอบ ===== */
+.doc{background:white;border:1px solid var(--line);border-radius:6px;padding:20px;color:#000}
+.doc-head{display:flex;justify-content:space-between;align-items:flex-end;gap:8px 16px;flex-wrap:wrap;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:10px}
+.doc-title{font-size:26px;font-weight:700;line-height:1.2}
+.doc-meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:15px}
+.hg{margin:0 0 12px}
+.doc table.hg-head{width:100%;min-width:0;table-layout:fixed;border-collapse:collapse;font-size:15px;break-inside:avoid;page-break-inside:avoid;break-after:avoid;page-break-after:avoid}
+.hg-head col.c1{width:64px}.hg-head col.c3{width:28%}
+.hg-head th,.hg-head td{border:1px solid #000;padding:4px 8px;vertical-align:middle;background:white}
+.hg-head th{font-weight:700;text-align:left;font-size:14px}
+.hg-head th.tot-label{text-align:center}
+.hg-head .mat{font-size:22px;font-weight:700;letter-spacing:.5px}
+.hg-head .desc{font-weight:600}
+.hg-head .unit{text-align:center;font-weight:600}
+.hg-head .bat{font-size:20px;font-weight:700}
+.hg-head .tot{font-size:22px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.hg-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(10,minmax(0,1fr));border-left:1px solid #000;border-top:0;counter-reset:n}
+.hg-list li{counter-increment:n;border-right:1px solid #000;border-bottom:1px solid #000;padding:2px 5px 2px 3px;font-size:14px;line-height:1.35;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;break-inside:avoid}
+.hg-list li::before{content:counter(n);float:left;font-size:10px;color:#666;margin-top:2px}
+.sign{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px;font-size:15px;break-inside:avoid;page-break-inside:avoid}
+.sign span{display:inline-block;width:42%;border-bottom:1px dotted #000;vertical-align:bottom;height:1.2em}
+.sign span.d{width:24%}
+.doc .print-note{font-size:13px;color:#59616e;margin-top:10px}
+@media(max-width:800px){.hg-list{grid-template-columns:repeat(5,minmax(0,1fr))}.hg-head .mat,.hg-head .tot{font-size:18px}.hg-head .bat{font-size:16px}.sign{grid-template-columns:1fr}}
+@media(max-width:600px){.doc{padding:10px}.doc-title{font-size:22px}.doc-meta{font-size:13px}.hg-head{font-size:13px}.hg-head col.c1{width:52px}.hg-head th,.hg-head td{padding:3px 5px}.hg-list li{font-size:13px}}
+@media print{
+  .doc{border:0;border-radius:0;padding:0}
+  .doc-head{padding-bottom:1.5mm;margin-bottom:3mm;border-bottom:0.5mm solid #000}
+  .doc-title{font-size:16pt}.doc-meta{font-size:9pt;gap:1mm 4mm}
+  .hg{margin:0 0 3.5mm}
+  .doc table.hg-head{font-size:9pt}
+  .hg-head col.c1{width:13mm}.hg-head col.c3{width:46mm}
+  .hg-head th,.hg-head td{border:0.3mm solid #000;padding:0.8mm 1.8mm;line-height:1.25}
+  .hg-head th{font-size:8.5pt}
+  .hg-head .mat{font-size:13pt}.hg-head .bat{font-size:12pt}.hg-head .tot{font-size:13pt}
+  .hg-list{grid-template-columns:repeat(10,minmax(0,1fr));border-left:0.3mm solid #000}
+  .hg-list li{border-right:0.3mm solid #000;border-bottom:0.3mm solid #000;font-size:8.5pt;line-height:1.3;padding:0.4mm 1.2mm 0.4mm 0.8mm}
+  .hg-list li::before{font-size:6pt;margin-top:0.5mm}
+  .sign{margin-top:8mm;font-size:10pt;gap:10mm}
+  .doc .print-note{font-size:7.5pt;margin-top:3mm}
+}
+/* ช่องตรวจเช็ค [ ] ในแต่ละช่องแจกแจง */
+.hg-list li{display:flex;align-items:center;gap:5px;text-align:left}
+.hg-list li::before{float:none;margin:0;min-width:1.7em;text-align:left}
+.hg-list .ck{flex:none;width:13px;height:13px;border:1px solid #000;background:#fff}
+.hg-list .w{margin-left:auto;text-align:right;overflow:hidden;text-overflow:clip}
+@media print{.hg-list li{gap:1mm;padding:0.6mm 1.2mm 0.6mm 0.8mm}.hg-list li::before{min-width:3.2mm}.hg-list .ck{width:3mm;height:3mm;border:0.2mm solid #000}}
