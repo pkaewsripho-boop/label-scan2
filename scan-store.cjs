@@ -6,6 +6,9 @@
 const fs=require('node:fs/promises'),zlib=require('node:zlib');
 const key=l=>JSON.stringify([l.sloc,l.date,l.labelId]);
 const match=(f,l)=>(!f.sloc||l.sloc===f.sloc)&&(!f.from||l.date>=f.from)&&(!f.to||l.date<=f.to)&&f.terms.every(t=>[l.material,l.batch].some(v=>String(v).toLowerCase().includes(t)));
+const trimDec=s=>{s=String(s);return s.includes('.')?s.replace(/0+$/,'').replace(/\.$/,''):s};
+const toMicro=v=>{const [a,b='']=String(v).split('.');return BigInt(a||'0')*1000000n+BigInt((b+'000000').slice(0,6))};
+const fromMicro=m=>trimDec((m/1000000n).toString()+'.'+(m%1000000n).toString().padStart(6,'0'));
 const page=(arr,limit,offset)=>limit?arr.slice(offset,offset+limit):arr.slice(offset);
 
 class FileStore{
@@ -15,6 +18,8 @@ class FileStore{
   async count(){return this.records.length}
   async catalog({from,to}){const counts={};for(const l of this.records)if((!from||l.date>=from)&&(!to||l.date<=to))counts[l.sloc]=(counts[l.sloc]||0)+1;return counts}
   async query(f,{limit=0,offset=0,newest=false}={}){let all=this.records.filter(l=>match(f,l));if(newest)all=all.map((l,i)=>[l,i]).sort((a,b)=>(Date.parse(b[0].createdAt)-Date.parse(a[0].createdAt))||(b[1]-a[1])).map(x=>x[0]);return {rows:page(all,limit,offset),total:all.length}}
+  async summary(f){const m=new Map();for(const l of this.records){if(!match(f,l))continue;const k=JSON.stringify([l.material,l.batch,l.sloc,l.unit||'']);let g=m.get(k);if(!g)m.set(k,g={material:l.material,batch:l.batch,sloc:l.sloc,unit:l.unit||'',count:0,sum:0n,firstDate:l.date,lastDate:l.date});g.count++;g.sum+=toMicro(l.qty);if(l.date<g.firstDate)g.firstDate=l.date;if(l.date>g.lastDate)g.lastDate=l.date}
+    return [...m.values()].map(({sum,...g})=>({...g,total:fromMicro(sum)}))}
   async bySlocDate(sloc,date){return this.records.filter(x=>x.sloc===sloc&&x.date===date)}
   async findBatch(id){return this.batches.find(b=>b.batchId===id)||null}
   async existingKeys(items){const have=new Set(this.records.map(key));return new Set(items.map(key).filter(k=>have.has(k)))}
@@ -49,6 +54,7 @@ class PgStore{
   async catalog({from,to}){const w=this.where({from,to,terms:[]}),{rows}=await this.q(`SELECT sloc,count(*) n FROM label_scans${w.sql} GROUP BY sloc`,w.args),counts={};for(const r of rows)counts[r.sloc]=Number(r.n);return counts}
   async query(f,{limit=0,offset=0,newest=false}={}){const w=this.where(f),a=[...w.args];let sql=`SELECT data FROM label_scans${w.sql} ORDER BY ${newest?'created_at DESC, seq DESC':'seq'}`;if(limit){a.push(limit);sql+=` LIMIT $${a.length}`}if(offset){a.push(offset);sql+=` OFFSET $${a.length}`}
     const [{rows},total]=await Promise.all([this.q(sql,a),this.q(`SELECT count(*) n FROM label_scans${w.sql}`,w.args)]);return {rows:rows.map(r=>r.data),total:Number(total.rows[0].n)}}
+  async summary(f){const w=this.where(f),{rows}=await this.q(`SELECT material,batch,sloc,coalesce(data->>'unit','') unit,count(*) n,sum((data->>'qty')::numeric)::text total,min(work_date) first_date,max(work_date) last_date FROM label_scans${w.sql} GROUP BY 1,2,3,4 LIMIT 5001`,w.args);return rows.map(r=>({material:r.material,batch:r.batch,sloc:r.sloc,unit:r.unit,count:Number(r.n),total:trimDec(r.total),firstDate:r.first_date,lastDate:r.last_date}))}
   async bySlocDate(sloc,date){return (await this.q('SELECT data FROM label_scans WHERE sloc=$1 AND work_date=$2 ORDER BY seq',[sloc,date])).rows.map(r=>r.data)}
   async findBatch(id){const r=(await this.q('SELECT batch_id,signature,record_ids,created_at FROM label_scan_batches WHERE batch_id=$1',[id])).rows[0];return r?{batchId:r.batch_id,signature:r.signature,recordIds:r.record_ids,createdAt:r.created_at.toISOString()}:null}
   async existingKeys(items){if(!items.length)return new Set();const out=new Set();for(let i=0;i<items.length;i+=1000){const part=items.slice(i,i+1000),{rows}=await this.q('SELECT sloc,work_date,label_id FROM label_scans WHERE (sloc,work_date,label_id) IN (SELECT * FROM unnest($1::text[],$2::text[],$3::text[]))',[part.map(x=>x.sloc),part.map(x=>x.date),part.map(x=>x.labelId)]);for(const r of rows)out.add(JSON.stringify([r.sloc,r.work_date,r.label_id]))}return out}

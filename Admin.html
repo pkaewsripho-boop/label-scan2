@@ -83,8 +83,37 @@ td.pick input,th.pick input{min-height:0;padding:0;flex:none}
 /* เมนู 4 ปุ่มแถวเดียว */
 header .page-nav{grid-template-columns:repeat(4,auto)}
 @media(max-width:700px){header .page-nav{grid-template-columns:repeat(4,minmax(0,1fr))}header .page-nav .button{font-size:13px;padding:6px 4px}}
+/* สรุปยอดตามตัวกรอง */
+.summary-panel{margin:16px 0}
+.summary-panel #summaryCount{color:#173f8a;font-weight:700}
+.summary-wrap{overflow:auto;border:1px solid var(--line);border-radius:6px;background:#fff}
+table.summary{width:100%;min-width:0;border-collapse:collapse;font-size:15px}
+table.summary th,table.summary td{padding:7px 10px;border-bottom:1px solid #e3e8f0;text-align:left;white-space:nowrap}
+table.summary thead th{background:#e9eef8;font-size:14px}
+table.summary .number{text-align:right;font-variant-numeric:tabular-nums}
+table.summary td.total{font-weight:700}
+table.summary td.descr{white-space:normal;min-width:180px;color:#515b6c;font-size:14px}
+table.summary tr.first td{border-top:2px solid #c9d3e3}
+table.summary tr.sub td{background:#f3f6fb;font-weight:700;color:#263c62}
+table.summary tr.grand td{background:#173f8a;color:#fff;font-weight:700;font-size:16px}
+table.summary tr.mhead,table.summary .m-unit{display:none}
+@media(max-width:700px){
+  table.summary{font-size:14px}
+  table.summary th,table.summary td{padding:6px 7px}
+  table.summary .c-mat,table.summary .c-desc,table.summary .c-unit,table.summary .c-date{display:none}
+  table.summary .m-unit{display:inline;font-weight:400;font-size:12px}
+  table.summary tr.mhead{display:table-row}
+  table.summary tr.mhead td{background:#e9eef8;white-space:normal;border-top:2px solid #8b9bb7;font-size:14px}
+  table.summary tr.mhead span{display:block;font-size:12px;color:#515b6c}
+  table.summary tr.grand td{font-size:15px}
+}
+table.summary tr.first td{border-top:1px solid #d5dce8}
+table.summary tr.mat td{border-top:2px solid #8b9bb7}
+table.summary{table-layout:auto;display:table}
+@media(max-width:700px){table.summary td.c-bat{white-space:nowrap}table.summary tr.sub td,table.summary tr.grand td{white-space:normal}}
 </style></head><body><header><div><h1>ข้อมูลดิบการสแกน</h1><p>ข้อมูลที่กด Save แล้ว • ทุกผู้สแกน / ทุก SLoc</p><p class="presence-line"><span id="onlineCount" role="status">ออนไลน์ —</span> <span id="anonymousCount" hidden></span></p></div><nav class="page-nav"><a class="button primary-link" href="/silicon-tags">พิมพ์ป้ายแจกแจงรายการ</a><a class="button primary-link" href="/tags">พิมพ์ป้าย Tag</a><a class="button primary-link" href="/handover">พิมพ์ใบส่งมอบ</a><a class="button" href="/">← หน้าสแกน</a></nav></header>
 <main><section aria-label="ตัวกรอง"><div class="filters"><div><label for="from">ตั้งแต่วันที่งาน</label><input id="from" type="date"></div><div><label for="to">ถึงวันที่งาน</label><input id="to" type="date"></div><div><label for="slocFilter">SLoc</label><select id="slocFilter"><option value="">ทุก SLoc</option></select></div><div class="search"><label for="query">ค้นหา Material (ไอเทม) / Batch</label><input id="query" autocomplete="off" placeholder="เช่น 10201025000/26022401" aria-describedby="searchHelp"><small id="searchHelp">ค้นหาอัตโนมัติ • ไอเทม / Batch</small></div></div><div class="actions"><button id="apply" class="primary">เรียกข้อมูล</button><button id="excel">Export Excel ↓</button><button id="json">Export JSON ↓</button></div><p class="hint">เลือกวันที่สแกนก่อน ช่อง SLoc จะแสดงเฉพาะ SLoc ที่สแกนในช่วงนั้น • ไม่เลือกวันที่ / SLoc / ค้นหา แล้วกด Export = ดึงข้อมูลทั้งหมด</p><p id="status" role="status">กำลังเรียกข้อมูล…</p></section><div id="importSlot"></div><details class="panel" id="historyPanel"><summary>ประวัติการลบ (ล่าสุด 100 รายการ)</summary><p id="historyStatus" class="hint">เปิดเพื่อโหลด</p><div class="history-wrap"><table><thead><tr><th>เวลาลบ (ไทย)</th><th>ผู้ลบ</th><th>เหตุผล</th><th>วันที่งาน</th><th>SLoc</th><th>Material</th><th>Batch</th><th>จำนวน</th><th>Label ID</th></tr></thead><tbody id="historyRows"></tbody></table></div></details>
+<section id="summaryPanel" class="summary-panel" hidden><div class="result-head"><h2>สรุปยอดตามตัวกรอง</h2><span id="summaryCount"></span></div><p class="hint" id="summaryHint">แจกแจงตาม Material → Batch → SLoc • ยอดรวมคำนวณจากทุกรายการที่ตรงตัวกรอง (ไม่ใช่เฉพาะหน้าที่แสดง)</p><div class="summary-wrap"><table class="summary"><thead><tr><th class="c-mat">Material</th><th class="c-desc">Descr</th><th>Batch</th><th>SLoc</th><th class="number">ลาเบล</th><th class="number">ยอดรวม</th><th class="c-unit">หน่วย</th><th class="c-date">วันที่งาน</th></tr></thead><tbody id="summaryRows"></tbody><tfoot id="summaryTotals"></tfoot></table></div></section>
 <section><div class="result-head"><h2>รายการที่บันทึกบน Server</h2><strong id="count">0 รายการ</strong></div><p class="hint">เวลาประเทศไทย (UTC+7) • ปี ค.ศ. • Descr อ้างอิง Master Data<br>เรียงจากบันทึกล่าสุดไปเก่าสุด • แสดงหน้าละ 100 รายการ • Export ครบทุกแถวตามตัวกรอง ไม่จำกัดเฉพาะหน้าที่แสดง</p><div class="delete-bar" id="deleteBar"><label class="m-pickpage" for="pickPageM"><input type="checkbox" id="pickPageM"> ทั้งหน้า</label><span id="pickCount">ยังไม่ได้เลือก</span><button id="clearPicked" type="button" disabled>ล้างที่เลือก</button><button id="deletePicked" type="button" class="danger" disabled>ลบรายการที่เลือก</button></div><div class="table-wrap" tabindex="0" aria-label="ตารางข้อมูลดิบ เลื่อนซ้ายขวาเพื่อดูทุกคอลัมน์"><table><thead><tr><th class="pick"><input type="checkbox" id="pickPage" aria-label="เลือกทั้งหน้านี้"></th><th>วันที่</th><th>SLoc</th><th>Material</th><th class="descr">Descr</th><th>Batch</th><th>จำนวน</th><th>หน่วย</th><th>ผู้สแกน</th><th>เวลาบันทึก Server (ไทย)</th></tr></thead><tbody id="rows"></tbody></table></div><p id="emptyState" class="empty" hidden>ไม่พบรายการที่ตรงตัวกรอง</p><div class="pagination"><button id="prev">← ก่อนหน้า</button><span id="page">1 / 1</span><button id="next">ถัดไป →</button></div></section>
 <p class="notice">ผู้ใช้ทุกคนในเครือข่ายนี้สามารถเรียกดูและ Export ได้ ไม่มีระบบล็อกอิน จึงควรเปิดให้เข้าถึงเฉพาะเครือข่ายที่เชื่อถือได้ ข้อมูลรอบันทึกบนหน้าสแกนจะยังไม่ปรากฏที่นี่จนกด Save</p></main>
 <dialog id="removeDialog" aria-labelledby="removeTitle"><form id="removeForm"><h2 id="removeTitle">ลบรายการที่บันทึกแล้ว?</h2><p id="removeSummary"></p><ul id="removeList"></ul><label for="removeBy">ชื่อผู้ลบ *</label><input id="removeBy" maxlength="80" required autocomplete="off"><label for="removeReason">เหตุผล *</label><textarea id="removeReason" maxlength="300" required rows="3" placeholder="เช่น สแกน QR เข้าช่อง SLoc ผิด / สแกนผิด SLoc"></textarea><p class="hint">ลบแล้วไม่หายถาวร: ระบบเก็บสำเนาไว้ใน “ประวัติการลบ” พร้อมชื่อผู้ลบและเหตุผล</p><p id="removeStatus" class="error" role="alert"></p><div class="remove-buttons"><button type="button" id="removeCancel">ยกเลิก</button><button type="submit" id="removeConfirm" class="danger">ยืนยันลบ</button></div></form></dialog><script>'use strict';
@@ -153,7 +182,7 @@ if(kind==='excel'||kind==='json'){const all=await fetchAll(f,'กำลังด
   return}
 status('กำลังเรียกข้อมูลจาก Server…');const data=await request(endpoint(f)+'&order=new&limit='+size+'&offset='+page*size);if(revision!==searchRevision)return;
 total=data.count;const pages=Math.max(1,Math.ceil(total/size));if(page>pages-1&&total){page=pages-1;lock(false);return load(kind,true)}rows=data.records;render();
-history.replaceState(null,'','/admin?'+new URLSearchParams(f));status(`เรียกข้อมูลแล้ว ${total.toLocaleString()} รายการ • ${f.sloc||'ทุก SLoc'} • ทุกผู้สแกน${pages>1?` • หน้า ${page+1}/${pages}`:''}`)}
+history.replaceState(null,'','/admin?'+new URLSearchParams(f));summary(f,revision);status(`เรียกข้อมูลแล้ว ${total.toLocaleString()} รายการ • ${f.sloc||'ทุก SLoc'} • ทุกผู้สแกน${pages>1?` • หน้า ${page+1}/${pages}`:''}`)}
 catch(e){if(revision===searchRevision)status(e.message||'เรียกข้อมูลไม่ได้ กรุณาตรวจการเชื่อมต่อ',true)}finally{lock(false);if(revision!==searchRevision)load()}}
 $('apply').onclick=()=>load();$('excel').onclick=()=>load('excel');$('json').onclick=()=>load('json');$('prev').onclick=()=>{if(!busy&&page>0){page--;load(undefined,true)}};$('next').onclick=()=>{if(!busy&&(page+1)*size<total){page++;load(undefined,true)}};$('query').oninput=()=>{searchRevision++;clearTimeout(searchTimer);status('กำลังค้นหา…');searchTimer=setTimeout(()=>load(),150)};$('query').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();clearTimeout(searchTimer);load()}};
 let slocToken=0;
@@ -173,6 +202,21 @@ $('removeForm').onsubmit=async e=>{e.preventDefault();const ids=[...picked.keys(
     $('removeDialog').close();$('removeReason').value='';await slocs();searchRevision++;await load(undefined,true);status(`ลบแล้ว ${done.toLocaleString()} รายการ • ดูได้ใน “ประวัติการลบ”`);if($('historyPanel').open)history_()}catch(err){$('removeStatus').textContent=(done?`ลบไปแล้ว ${done} รายการ แต่ส่วนที่เหลือไม่สำเร็จ: `:'')+err.message}finally{$('removeConfirm').disabled=false}};
 async function history_(){$('historyStatus').textContent='กำลังโหลด…';try{const {deletions}=await request('/api/deletions?limit=100');$('historyRows').innerHTML=deletions.map(d=>`<tr><td>${esc(thaiTime(d.deletedAt))}</td><td>${esc(d.by)}</td><td>${esc(d.reason)}</td><td>${esc(d.record.date)}</td><td><b>${esc(d.record.sloc)}</b></td><td>${esc(d.record.material)}</td><td>${esc(d.record.batch)}</td><td class="number">${fmt(d.record.qty)} ${esc(d.record.unit||'')}</td><td>${esc(d.record.labelId)}</td></tr>`).join('');$('historyStatus').textContent=deletions.length?`${deletions.length} รายการล่าสุด`:'ยังไม่มีการลบ'}catch(e){$('historyStatus').textContent=e.message}}
 $('historyPanel').addEventListener('toggle',()=>{if($('historyPanel').open)history_()});
+
+// สรุปยอดตามตัวกรอง: แสดงเมื่อมีการค้นหา/กรอง • Material → Batch → SLoc พร้อมยอดรวมต่อ Batch (ถ้ามีหลาย SLoc) และยอดรวมทั้งหมด
+const mic=v=>{const [a,b='']=String(v).split('.');return BigInt(a||'0')*1000000n+BigInt((b+'000000').slice(0,6))},mshow=m=>{const i=(m/1000000n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,','),f=(m%1000000n).toString().padStart(6,'0').replace(/0+$/,'');return f?i+'.'+f:i};
+const dates=g=>g.firstDate===g.lastDate?esc(g.firstDate):`${esc(g.firstDate)} – ${esc(g.lastDate)}`;
+async function summary(f,revision){const panel=$('summaryPanel');if(!f.q&&!f.sloc&&!f.from&&!f.to){panel.hidden=true;return}
+  try{const d=await request('/api/scans-summary?'+new URLSearchParams(f).toString());if(revision!==searchRevision)return;const out=[];let i=0,lastMat=null;
+    while(i<d.groups.length){const g0=d.groups[i];let j=i;while(j<d.groups.length&&d.groups[j].material===g0.material&&d.groups[j].batch===g0.batch&&d.groups[j].unit===g0.unit)j++;const part=d.groups.slice(i,j);
+      const newMat=g0.material!==lastMat;lastMat=g0.material;const U=u=>esc(u||'ไม่ระบุหน่วย');
+      if(newMat)out.push(`<tr class="mhead"><td colspan="8"><b>${esc(g0.material)}</b> <span>${esc(g0.description||'')}</span></td></tr>`);
+      part.forEach((g,k)=>out.push(`<tr class="${k===0?(newMat?'first mat':'first'):''}"><td class="c-mat">${k===0&&newMat?`<b>${esc(g.material)}</b>`:''}</td><td class="c-desc descr">${k===0&&newMat?esc(g.description||'—'):''}</td><td class="c-bat">${k===0?`<b>${esc(g.batch)}</b>`:''}</td><td class="c-sloc"><b>${esc(g.sloc)}</b></td><td class="number">${g.count.toLocaleString()}</td><td class="number total">${mshow(mic(g.total))}<span class="m-unit"> ${U(g.unit)}</span></td><td class="c-unit">${U(g.unit)}</td><td class="c-date">${dates(g)}</td></tr>`));
+      if(part.length>1){const n=part.reduce((a,g)=>a+g.count,0),s=part.reduce((a,g)=>a+mic(g.total),0n);out.push(`<tr class="sub"><td class="c-mat"></td><td class="c-desc"></td><td colspan="2">รวม Batch ${esc(g0.batch)} (${part.length} SLoc)</td><td class="number">${n.toLocaleString()}</td><td class="number total">${mshow(s)}<span class="m-unit"> ${U(g0.unit)}</span></td><td class="c-unit">${U(g0.unit)}</td><td class="c-date"></td></tr>`)}i=j}
+    $('summaryRows').innerHTML=out.join('')||'<tr><td colspan="8" class="empty">ไม่พบรายการ</td></tr>';
+    $('summaryTotals').innerHTML=d.totals.map(t=>`<tr class="grand"><td class="c-mat"></td><td class="c-desc"></td><td colspan="2">รวมทั้งหมด</td><td class="number">${t.count.toLocaleString()}</td><td class="number total">${mshow(mic(t.total))}<span class="m-unit"> ${esc(t.unit||'ไม่ระบุหน่วย')}</span></td><td class="c-unit">${esc(t.unit||'ไม่ระบุหน่วย')}</td><td class="c-date"></td></tr>`).join('');
+    const batches=new Set(d.groups.map(g=>g.material+'|'+g.batch)).size,slocs=new Set(d.groups.map(g=>g.sloc)).size;$('summaryCount').textContent=`${batches} Batch • ${slocs} SLoc`;$('summaryHint').textContent=d.truncated?'แสดง 5,000 กลุ่มแรก กรุณากรองให้แคบลง':'แจกแจงตาม Material → Batch → SLoc • ยอดรวมคำนวณจากทุกรายการที่ตรงตัวกรอง (ไม่ใช่เฉพาะหน้าที่แสดง)';panel.hidden=false}
+  catch(e){if(revision===searchRevision){panel.hidden=false;$('summaryRows').innerHTML=`<tr><td colspan="8" class="empty">${esc(e.message)}</td></tr>`;$('summaryTotals').innerHTML=''}}}
 window.adminApp={getRows:()=>rows,load};window.addEventListener('labelscan-imported',async()=>{try{await slocs();searchRevision++;await load()}catch(e){status(e.message,true)}});})();
 </script><script>'use strict';
 // นำเข้าข้อมูลสแกนจากไฟล์ Excel ที่ Export จากระบบนี้ (ชีต Raw_Scans) — ใช้ย้ายข้อมูลเก่าเข้าระบบใหม่

@@ -83,3 +83,31 @@ td.pick input,th.pick input{min-height:0;padding:0;flex:none}
 /* เมนู 4 ปุ่มแถวเดียว */
 header .page-nav{grid-template-columns:repeat(4,auto)}
 @media(max-width:700px){header .page-nav{grid-template-columns:repeat(4,minmax(0,1fr))}header .page-nav .button{font-size:13px;padding:6px 4px}}
+/* สรุปยอดตามตัวกรอง */
+.summary-panel{margin:16px 0}
+.summary-panel #summaryCount{color:#173f8a;font-weight:700}
+.summary-wrap{overflow:auto;border:1px solid var(--line);border-radius:6px;background:#fff}
+table.summary{width:100%;min-width:0;border-collapse:collapse;font-size:15px}
+table.summary th,table.summary td{padding:7px 10px;border-bottom:1px solid #e3e8f0;text-align:left;white-space:nowrap}
+table.summary thead th{background:#e9eef8;font-size:14px}
+table.summary .number{text-align:right;font-variant-numeric:tabular-nums}
+table.summary td.total{font-weight:700}
+table.summary td.descr{white-space:normal;min-width:180px;color:#515b6c;font-size:14px}
+table.summary tr.first td{border-top:2px solid #c9d3e3}
+table.summary tr.sub td{background:#f3f6fb;font-weight:700;color:#263c62}
+table.summary tr.grand td{background:#173f8a;color:#fff;font-weight:700;font-size:16px}
+table.summary tr.mhead,table.summary .m-unit{display:none}
+@media(max-width:700px){
+  table.summary{font-size:14px}
+  table.summary th,table.summary td{padding:6px 7px}
+  table.summary .c-mat,table.summary .c-desc,table.summary .c-unit,table.summary .c-date{display:none}
+  table.summary .m-unit{display:inline;font-weight:400;font-size:12px}
+  table.summary tr.mhead{display:table-row}
+  table.summary tr.mhead td{background:#e9eef8;white-space:normal;border-top:2px solid #8b9bb7;font-size:14px}
+  table.summary tr.mhead span{display:block;font-size:12px;color:#515b6c}
+  table.summary tr.grand td{font-size:15px}
+}
+table.summary tr.first td{border-top:1px solid #d5dce8}
+table.summary tr.mat td{border-top:2px solid #8b9bb7}
+table.summary{table-layout:auto;display:table}
+@media(max-width:700px){table.summary td.c-bat{white-space:nowrap}table.summary tr.sub td,table.summary tr.grand td{white-space:normal}}
